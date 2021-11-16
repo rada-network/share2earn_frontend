@@ -1,1 +1,5 @@
-# share2earn_frontend
+# Getting Started
+
+### `yarn start`
+
+### `yarn build`
