@@ -1,6 +1,6 @@
 import React from 'react'
 // import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Container } from '@mui/material'
 import { Header } from './components/Header'
 import { Main } from './components/Main'

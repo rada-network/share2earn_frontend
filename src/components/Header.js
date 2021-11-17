@@ -1,36 +1,25 @@
 import React, { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom'
 
 import {
   Box,
   Button,
   Snackbar,
-  Card,
   Typography,
-  CardActions,
-  CardContent,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
   AppBar,
   Toolbar,
-  InputBase,
-  IconButton,
   Chip,
   DialogTitle,
   Dialog,
   DialogContent,
 } from '@mui/material'
 
-import { makeStyles } from '@mui/styles'
+// import { makeStyles } from '@mui/styles'
 
 import { useEthers } from '@usedapp/core'
 import { WalletConnectConnector } from '@web3-react/walletconnect-connector'
 import config from '../network-config'
 
 import { useCall } from '../hooks'
-import { TramRounded } from '@mui/icons-material'
 const walletConnect = new WalletConnectConnector({
   rpc: {
     97: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
@@ -39,17 +28,17 @@ const walletConnect = new WalletConnectConnector({
   qrcode: true,
 })
 
-const useStyles = makeStyles({
+/* const useStyles = makeStyles({
   container: {
     padding: 16,
     display: 'flex',
     justifyContent: 'flex-end',
     gap: 4,
   },
-})
+}) */
 
 export const Header = () => {
-  const classes = useStyles()
+  // const classes = useStyles()
 
   const {
     chainId,
@@ -117,7 +106,7 @@ export const Header = () => {
             variant="h6"
             noWrap
             component="div"
-            sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}>
+            sx={{ flexGrow: 1, display: { xs: 'noneX', sm: 'block' } }}>
             Referral | Rada.network
           </Typography>
           <Typography

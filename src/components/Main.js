@@ -17,7 +17,6 @@ import {
   List,
   ListItem,
   Link,
-  Box,
 } from '@mui/material'
 
 const useStyles = makeStyles({
@@ -45,7 +44,7 @@ export const Main = () => {
   // send the brownie-config to our `src` folder
   // send the build folder
   const classes = useStyles()
-  const { chainId, error } = useEthers()
+  const { chainId } = useEthers()
   // const chainId = '97'
   // const networkName = "rinkeby"
   const rirTokenAddress = chainId

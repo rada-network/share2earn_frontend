@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
+
 import {
   Box,
   Button,
@@ -51,6 +53,7 @@ import {
   useCheckJoin,
   useJoined,
   useCall,
+  useGetIncentiveHolder,
 } from '../../hooks'
 
 const useStyles = makeStyles({
@@ -81,17 +84,17 @@ const useStyles = makeStyles({
   },
 })
 
-const bull = (
+/* const bull = (
   <Box
     component="span"
     sx={{ display: 'inline-block', mx: '2px', transform: 'scale(0.8)' }}>
     •
   </Box>
-)
+) */
 
 export const YourWallet = ({ supportedTokens }) => {
   const { chainId, account } = useEthers()
-  const [errorMessage, setErrorMessage] = React.useState('')
+  const [alertMessage, setAlertMessage] = React.useState('')
 
   const contractAddress = chainId ? config[chainId]['referral_contract'] : ''
 
@@ -119,7 +122,7 @@ export const YourWallet = ({ supportedTokens }) => {
     if (reason === 'clickaway') {
       return
     }
-    setErrorMessage('')
+    setAlertMessage('')
   }
 
   const [programCode, setProgramCode] = useState('')
@@ -135,62 +138,92 @@ export const YourWallet = ({ supportedTokens }) => {
   const { state: joinState, send: joinProgram } = useContractMethod(
     'joinProgram'
   )
+  const { state: approveAllState, send: approveAll } = useContractMethod(
+    'approveAllIncentive'
+  )
+  const { state: denyState, send: denyIncentive } = useContractMethod(
+    'denyIncentive'
+  )
 
   useEffect(() => {
-    if (joinState.status === 'Success') {
-      // window.location.reload();
+    if (
+      joinState.status === 'Success' ||
+      approveAllState.status === 'Success' ||
+      denyState.status === 'Success'
+    ) {
+      setAlertMessage('Success')
+      setOpenConfirm(false)
+      setUserUid('')
+      setUserIndex(0)
+
+      // Close confirm approveAll
+      setOpenConfirmApprove(false)
     } else if (joinState.status === 'Exception') {
-      setErrorMessage(joinState.errorMessage)
+      setAlertMessage(joinState.alertMessage)
+    } else if (denyState.status === 'Exception') {
+      setAlertMessage(denyState.alertMessage)
+    } else if (approveAllState.status === 'Exception') {
+      setAlertMessage(approveAllState.alertMessage)
     }
-  }, [joinState])
+  }, [joinState, denyState, approveAllState])
 
-  var programDetail = useGetProgram(programCode, contractAddress)
+  const programDetail = useGetProgram(programCode, contractAddress)
+  const incentiveHolders = useGetIncentiveHolder(programDetail, contractAddress)
 
-  var joinedProgram = useCheckJoin(programCode, myUid, contractAddress)
+  console.log(incentiveHolders, 'incentiveHolders')
 
+  var joinedProgram = useCheckJoin(programDetail, myUid, contractAddress)
+  // console.log(joinedProgram)
   if (joinedProgram === '0x0000000000000000000000000000000000000000')
     joinedProgram = null
 
   var isAdmin = useCall('admins', contractAddress, [account])
 
-  const handleJoin = event => {
+  const handleJoin = () => {
     var url_string = window.location.href
     var url = new URL(url_string)
     var referral = url.searchParams.get('ref')
-
     joinProgram(programCode, myUid, referral ?? '')
   }
 
-  const [openConfirm, setOpenConfirm] = React.useState(false)
-  const [userUid, setUserUid] = React.useState(false)
+  const handleApproval = () => {
+    approveAll(programCode)
+  }
 
-  const handleClickOpenConfirm = uid => () => {
+  const [openConfirm, setOpenConfirm] = React.useState(false)
+  const [openConfirmApprove, setOpenConfirmApprove] = React.useState(false)
+
+  const [userUid, setUserUid] = React.useState(false)
+  const [userIndex, setUserIndex] = React.useState(0)
+
+  const handleClickOpenConfirm = (uid, index) => () => {
     setUserUid(uid)
+    setUserIndex(index)
     setOpenConfirm(true)
   }
 
   const handleConfirm = () => {
-    // setOpenConfirm(false)
-    // TODO:
+    denyIncentive(programDetail.code, userIndex)
   }
   const handleCloseConfirm = () => {
     setOpenConfirm(false)
     setUserUid('')
+    setUserIndex(0)
+  }
+  const handleCloseConfirmApprove = () => {
+    setOpenConfirmApprove(false)
+  }
+  const handleClickOpenConfirmApprove = () => {
+    setOpenConfirmApprove(true)
   }
 
   const [rows, setRows] = useState([])
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (Object.keys(programDetail).length > 0 && programDetail.code !== '') {
-      setRows([
-        createData('Frozen yoghurt', 159, 6.0),
-        createData('Ice cream sandwich', 237, 9.0),
-        createData('Eclair', 262, 16.0),
-        createData('Cupcake', 305, 3.7),
-        createData('Gingerbread', 356, 16.0),
-      ])
+      setRows([createData(incentiveHolders, 0, 0.2)])
     }
-  }, [programDetail])
+  }, [programDetail, incentiveHolders]) */
 
   function createData(uid, tokenOwn, tokenIncentive) {
     return { uid, tokenOwn, tokenIncentive }
@@ -201,12 +234,12 @@ export const YourWallet = ({ supportedTokens }) => {
       {account && (
         <Box className={classes.box}>
           <div> Your Wallet is {account}</div>
-          {false && (
+          {/* {isAdmin && (
             <div className={classes.uid}>
               Your UID (fake): <b>{myUid}</b>
             </div>
-          )}
-          {chainId === 97 && false && (
+          )} */}
+          {isAdmin && (
             <div style={{ marginTop: 15 }}>
               <TextField
                 label="Your UID (in rada.network)"
@@ -347,9 +380,9 @@ export const YourWallet = ({ supportedTokens }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map(row => (
+                    {rows.map((row, index) => (
                       <TableRow
-                        key={row.uid}
+                        key={`${row.uid}-${index}`}
                         sx={{
                           '&:last-child td, &:last-child th': { border: 0 },
                         }}>
@@ -365,7 +398,7 @@ export const YourWallet = ({ supportedTokens }) => {
                             color="primary"
                             aria-label="upload picture"
                             component="span"
-                            onClick={handleClickOpenConfirm(row.uid)}>
+                            onClick={handleClickOpenConfirm(row.uid, index)}>
                             <RemoveCircleRoundedIcon style={{ color: 'red' }} />
                           </IconButton>
                         </TableCell>
@@ -378,18 +411,21 @@ export const YourWallet = ({ supportedTokens }) => {
           </CardContent>
           <CardActions className={classes.rightAlignItem}>
             <Button
-              disabled={rows.length === 0}
+              disabled={
+                rows.length === 0 || approveAllState.status === 'Mining'
+              }
               variant="contained"
-              onClick={e => handleJoin(programDetail.code, e)}>
+              onClick={handleClickOpenConfirmApprove}>
               Approve All
-              {joinState.status === 'Mining' && ', joining (30s)...'}
+              {approveAllState.status === 'Mining' &&
+                ', please wait (15 -> 30s)...'}
             </Button>
 
-            {account && !joinedProgram && false && (
+            {account && !joinedProgram && isAdmin && (
               <Button
                 disabled={!myUid || joinState.status === 'Mining'}
                 variant="contained"
-                onClick={e => handleJoin(programDetail.code, e)}>
+                onClick={handleJoin}>
                 Join Program{' '}
                 {joinState.status === 'Mining' && ', joining (30s)...'}
               </Button>
@@ -407,7 +443,7 @@ export const YourWallet = ({ supportedTokens }) => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description">
         <DialogTitle id="alert-dialog-title">
-          Denied the incentive of user #{userUid}
+          Remove incentive #{userUid}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
@@ -416,7 +452,21 @@ export const YourWallet = ({ supportedTokens }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseConfirm}>Disagree</Button>
-          <Button onClick={handleConfirm} autoFocus>
+          <Button variant="contained" onClick={handleConfirm} autoFocus>
+            Agree
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openConfirmApprove}
+        onClose={handleCloseConfirmApprove}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">Approve all incentive</DialogTitle>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmApprove}>Disagree</Button>
+          <Button variant="contained" onClick={handleApproval} autoFocus>
             Agree
           </Button>
         </DialogActions>
@@ -424,15 +474,18 @@ export const YourWallet = ({ supportedTokens }) => {
 
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        open={errorMessage !== ''}
+        open={alertMessage !== ''}
         autoHideDuration={10000}
         onClose={handleClose}
-        message={errorMessage}
+        message={alertMessage}
       />
     </Box>
   )
 }
 
+YourWallet.propTypes = {
+  supportedTokens: PropTypes.array,
+}
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,

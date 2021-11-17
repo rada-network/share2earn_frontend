@@ -1,6 +1,11 @@
 import { useEffect } from 'react'
 import { constants, ethers } from 'ethers'
-import { useEthers, useContractCall, useContractFunction } from '@usedapp/core'
+import {
+  useEthers,
+  useContractCall,
+  useContractFunction,
+  useContractCalls,
+} from '@usedapp/core'
 import { Contract } from '@ethersproject/contracts'
 import ReferralContract from '../chain-info/contracts/ReferralContract.json'
 import ValidUserContract from '../chain-info/contracts/ValidUserContract.json'
@@ -22,9 +27,9 @@ export function useContractMethod(methodName) {
   const { state, send } = useContractFunction(contract, methodName)
 
   // useEffect
-  /* useEffect(() => {referralContractInterface
-      console.log(state);
-    }, [state]) */
+  /* useEffect(() => {
+    console.log(state)
+  }, [state]) */
 
   return { state, send }
 }
@@ -125,15 +130,16 @@ export function useJoinedAddress(account, contractAddress) {
   return uid
 }
 
-export function useCheckJoin(programCode, uid, contractAddress) {
+export function useCheckJoin(programDetail, uid, contractAddress) {
   const [joined] =
     useContractCall(
       uid &&
+        programDetail.code &&
         contractAddress && {
           abi: referralContractInterface,
           address: contractAddress,
           method: 'uidJoined',
-          args: [programCode, uid],
+          args: [programDetail.code, uid],
         }
     ) ?? []
 
@@ -153,3 +159,40 @@ export function useCall(functionCall, contractAddress, args = []) {
 
   return joined
 }
+
+export function useGetIncentiveHolder(programDetail, contractAddress) {
+  const { account } = useEthers()
+
+  var indexList = [0, 1, 3, 4]
+
+  indexList.map(index => {
+    console.log(index)
+  })
+
+  return useContractCalls(
+    account && programDetail.code && contractAddress
+      ? indexList.map(index => ({
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'holdReferrer',
+          args: [programDetail.code, index],
+        }))
+      : []
+  )
+}
+
+/* export function useGetIncentiveHolder(programDetail, index, contractAddress) {
+  const { account } = useEthers()
+  const [uid] =
+    useContractCall(
+      account &&
+        programDetail.code &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'holdReferrer',
+          args: [programDetail.code, index],
+        }
+    ) ?? {}
+  return uid === '' ? null : uid
+} */

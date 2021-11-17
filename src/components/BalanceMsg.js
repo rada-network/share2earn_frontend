@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 import { makeStyles } from '@mui/styles'
 
@@ -32,4 +33,10 @@ export const BalanceMsg = ({ label, amount, tokenImgSrc }) => {
       <div className={classes.amount}>{amount}</div>
     </div>
   )
+}
+
+BalanceMsg.propTypes = {
+  label: PropTypes.string,
+  amount: PropTypes.string,
+  tokenImgSrc: PropTypes.string,
 }
