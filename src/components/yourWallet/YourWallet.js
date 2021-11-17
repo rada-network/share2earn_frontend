@@ -54,6 +54,12 @@ import {
   useJoined,
   useCall,
   useGetIncentiveHolder,
+  useGetIncentive,
+  useGetTotalUser,
+  useGetTotalIncentive,
+  useGetJoiner,
+  useGetAddressJoiner,
+  // useGetHoldersTotal,
 } from '../../hooks'
 
 const useStyles = makeStyles({
@@ -135,6 +141,8 @@ export const YourWallet = ({ supportedTokens }) => {
     }
   }, [programCode]) */
 
+  const allowJoinProgram = false
+
   const { state: joinState, send: joinProgram } = useContractMethod(
     'joinProgram'
   )
@@ -154,30 +162,64 @@ export const YourWallet = ({ supportedTokens }) => {
       setAlertMessage('Success')
       setOpenConfirm(false)
       setUserUid('')
-      setUserIndex(0)
+      // setUserIndex(0)
 
       // Close confirm approveAll
       setOpenConfirmApprove(false)
     } else if (joinState.status === 'Exception') {
-      setAlertMessage(joinState.alertMessage)
+      setAlertMessage(joinState.errorMessage)
     } else if (denyState.status === 'Exception') {
-      setAlertMessage(denyState.alertMessage)
+      setAlertMessage(denyState.errorMessage)
     } else if (approveAllState.status === 'Exception') {
-      setAlertMessage(approveAllState.alertMessage)
+      setAlertMessage(approveAllState.errorMessage)
     }
   }, [joinState, denyState, approveAllState])
 
   const programDetail = useGetProgram(programCode, contractAddress)
-  const incentiveHolders = useGetIncentiveHolder(programDetail, contractAddress)
-
-  console.log(incentiveHolders, 'incentiveHolders')
 
   var joinedProgram = useCheckJoin(programDetail, myUid, contractAddress)
   // console.log(joinedProgram)
   if (joinedProgram === '0x0000000000000000000000000000000000000000')
     joinedProgram = null
 
+  const [openConfirm, setOpenConfirm] = React.useState(false)
+  const [openConfirmApprove, setOpenConfirmApprove] = React.useState(false)
+  const [openUsers, setOpenUsers] = React.useState(false)
+  const [userUid, setUserUid] = React.useState(false)
+  // const [userIndex, setUserIndex] = React.useState(0)
+
   var isAdmin = useCall('admins', contractAddress, [account])
+  /*
+  // Cách số 1 dùng functionCallS
+  var totalHolders = useGetHoldersTotal(programDetail, contractAddress) ?? 0
+  totalHolders = formatUnits(totalHolders, 0)
+
+  const incentiveHolders = useGetIncentiveHolder(
+    programDetail,
+    totalHolders,
+    contractAddress
+  ) */
+  const incentiveHolders = useGetIncentiveHolder(programDetail, contractAddress)
+  const joiner = useGetJoiner(programDetail, openUsers, contractAddress)
+
+  const addressJoiners = useGetAddressJoiner(
+    programDetail,
+    joiner,
+    contractAddress
+  )
+  // console.log(addressJoiners)
+
+  // console.log(incentiveHolders, 'incentiveHolders')
+  const incentiveAmount = useGetIncentive(
+    programDetail,
+    incentiveHolders,
+    contractAddress
+  )
+
+  const totalJoiner = useGetTotalUser(programDetail, contractAddress)
+  const totalIncentive = useGetTotalIncentive(programDetail, contractAddress)
+
+  // console.log(incentiveAmount, 'incentiveHolders')
 
   const handleJoin = () => {
     var url_string = window.location.href
@@ -190,25 +232,19 @@ export const YourWallet = ({ supportedTokens }) => {
     approveAll(programCode)
   }
 
-  const [openConfirm, setOpenConfirm] = React.useState(false)
-  const [openConfirmApprove, setOpenConfirmApprove] = React.useState(false)
-
-  const [userUid, setUserUid] = React.useState(false)
-  const [userIndex, setUserIndex] = React.useState(0)
-
   const handleClickOpenConfirm = (uid, index) => () => {
     setUserUid(uid)
-    setUserIndex(index)
+    // setUserIndex(index)
     setOpenConfirm(true)
   }
 
   const handleConfirm = () => {
-    denyIncentive(programDetail.code, userIndex)
+    denyIncentive(programDetail.code, userUid)
   }
   const handleCloseConfirm = () => {
     setOpenConfirm(false)
     setUserUid('')
-    setUserIndex(0)
+    // setUserIndex(0)
   }
   const handleCloseConfirmApprove = () => {
     setOpenConfirmApprove(false)
@@ -216,17 +252,41 @@ export const YourWallet = ({ supportedTokens }) => {
   const handleClickOpenConfirmApprove = () => {
     setOpenConfirmApprove(true)
   }
+  const handleClickCloseListUser = () => {
+    setOpenUsers(false)
+  }
+  const handleClickOpenListUser = () => {
+    setOpenUsers(true)
+  }
 
   const [rows, setRows] = useState([])
 
-  /* useEffect(() => {
-    if (Object.keys(programDetail).length > 0 && programDetail.code !== '') {
-      setRows([createData(incentiveHolders, 0, 0.2)])
-    }
-  }, [programDetail, incentiveHolders]) */
+  useEffect(() => {
+    if (
+      Object.keys(programDetail).length > 0 &&
+      programDetail.code !== '' &&
+      incentiveHolders &&
+      incentiveHolders[0] &&
+      incentiveAmount &&
+      incentiveAmount[0]
+    ) {
+      // console.log(incentiveHolders)
+      // console.log(incentiveAmount, 'incentiveAmount')
 
-  function createData(uid, tokenOwn, tokenIncentive) {
-    return { uid, tokenOwn, tokenIncentive }
+      const holders = incentiveHolders
+        .filter(
+          (aUid, index) => formatUnits(incentiveAmount[index][0], 18) !== '0.0'
+        )
+        .map((aUid, index) =>
+          createData(aUid, formatUnits(incentiveAmount[index][0], 18))
+        )
+      setRows(holders)
+    }
+    // console.log('useEffect')
+  }, [programDetail, incentiveHolders, incentiveAmount])
+
+  function createData(uid, tokenIncentive) {
+    return { uid, tokenIncentive }
   }
 
   return (
@@ -239,7 +299,7 @@ export const YourWallet = ({ supportedTokens }) => {
               Your UID (fake): <b>{myUid}</b>
             </div>
           )} */}
-          {isAdmin && (
+          {allowJoinProgram && isAdmin && (
             <div style={{ marginTop: 15 }}>
               <TextField
                 label="Your UID (in rada.network)"
@@ -346,12 +406,26 @@ export const YourWallet = ({ supportedTokens }) => {
       {Object.keys(programDetail).length > 0 && programDetail.code !== '' && (
         <Card sx={{ minWidth: 275, marginTop: 3 }}>
           <CardContent>
-            <Typography align="left" variant="h5" component="div">
-              #{programDetail.code}
-            </Typography>
-            <Typography align="left" component="div">
-              Status: {programDetail.paused ? 'Stopped' : 'Running'}
-            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+              }}>
+              <Typography align="left" variant="h5" component="div">
+                #{programDetail.code}
+              </Typography>
+              <Typography align="left" component="div">
+                Status: {programDetail.paused ? 'Stopped' : 'Running'}
+              </Typography>
+              <Typography align="left" component="div">
+                Joiner: {totalJoiner && formatUnits(totalJoiner, 0)}
+              </Typography>
+              <Typography align="left" component="div">
+                Reward: {totalIncentive && formatUnits(totalIncentive, 18)}
+              </Typography>
+            </Box>
+            <Divider style={{ marginTop: 5 }} />
             <List dense>
               <ListItem>
                 <ListItemText
@@ -374,12 +448,21 @@ export const YourWallet = ({ supportedTokens }) => {
                   <TableHead>
                     <TableRow>
                       <TableCell>UID</TableCell>
-                      <TableCell align="right">Own</TableCell>
                       <TableCell align="right">Incentive</TableCell>
                       <TableCell align="right">Action</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
+                    {rows.length === 0 && (
+                      <TableRow
+                        sx={{
+                          '&:last-child td, &:last-child th': { border: 0 },
+                        }}>
+                        <TableCell component="th" scope="row">
+                          No Referrer
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {rows.map((row, index) => (
                       <TableRow
                         key={`${row.uid}-${index}`}
@@ -389,7 +472,6 @@ export const YourWallet = ({ supportedTokens }) => {
                         <TableCell component="th" scope="row">
                           {row.uid}
                         </TableCell>
-                        <TableCell align="right">{row.tokenOwn}</TableCell>
                         <TableCell align="right">
                           {row.tokenIncentive}
                         </TableCell>
@@ -410,6 +492,9 @@ export const YourWallet = ({ supportedTokens }) => {
             </div>
           </CardContent>
           <CardActions className={classes.rightAlignItem}>
+            <Button variant="contained" onClick={handleClickOpenListUser}>
+              Joiners
+            </Button>
             <Button
               disabled={
                 rows.length === 0 || approveAllState.status === 'Mining'
@@ -421,7 +506,7 @@ export const YourWallet = ({ supportedTokens }) => {
                 ', please wait (15 -> 30s)...'}
             </Button>
 
-            {account && !joinedProgram && isAdmin && (
+            {allowJoinProgram && account && !joinedProgram && isAdmin && (
               <Button
                 disabled={!myUid || joinState.status === 'Mining'}
                 variant="contained"
@@ -438,6 +523,61 @@ export const YourWallet = ({ supportedTokens }) => {
       )}
 
       <Dialog
+        open={openUsers}
+        onClose={handleClickCloseListUser}
+        scroll={'paper'}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">Program {programCode}</DialogTitle>
+        <DialogContent dividers>
+          <TableContainer sx={{ maxHeight: 450 }} component={Paper}>
+            <Table stickyHeader aria-label="simple table" size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>UID</TableCell>
+                  <TableCell align="right">Address</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {joiner && joiner.length === 0 && (
+                  <TableRow
+                    sx={{
+                      '&:last-child td, &:last-child th': { border: 0 },
+                    }}>
+                    <TableCell component="th" scope="row">
+                      No Joiner
+                    </TableCell>
+                  </TableRow>
+                )}
+                {joiner &&
+                  joiner.map((uid, index) => (
+                    <TableRow
+                      key={`${uid}-${index}`}
+                      sx={{
+                        '&:last-child td, &:last-child th': { border: 0 },
+                      }}>
+                      <TableCell component="th" scope="row">
+                        {uid}
+                      </TableCell>
+                      <TableCell align="right">
+                        {addressJoiners[index]}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={denyState.status === 'Mining'}
+            onClick={handleClickCloseListUser}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
         open={openConfirm}
         onClose={handleCloseConfirm}
         aria-labelledby="alert-dialog-title"
@@ -451,8 +591,16 @@ export const YourWallet = ({ supportedTokens }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseConfirm}>Disagree</Button>
-          <Button variant="contained" onClick={handleConfirm} autoFocus>
+          <Button
+            disabled={denyState.status === 'Mining'}
+            onClick={handleCloseConfirm}>
+            Disagree
+          </Button>
+          <Button
+            disabled={denyState.status === 'Mining'}
+            variant="contained"
+            onClick={handleConfirm}
+            autoFocus>
             Agree
           </Button>
         </DialogActions>
@@ -465,8 +613,16 @@ export const YourWallet = ({ supportedTokens }) => {
         aria-describedby="alert-dialog-description">
         <DialogTitle id="alert-dialog-title">Approve all incentive</DialogTitle>
         <DialogActions>
-          <Button onClick={handleCloseConfirmApprove}>Disagree</Button>
-          <Button variant="contained" onClick={handleApproval} autoFocus>
+          <Button
+            disabled={approveAllState.status === 'Mining'}
+            onClick={handleCloseConfirmApprove}>
+            Disagree
+          </Button>
+          <Button
+            disabled={approveAllState.status === 'Mining'}
+            variant="contained"
+            onClick={handleApproval}
+            autoFocus>
             Agree
           </Button>
         </DialogActions>
@@ -483,9 +639,6 @@ export const YourWallet = ({ supportedTokens }) => {
   )
 }
 
-YourWallet.propTypes = {
-  supportedTokens: PropTypes.array,
-}
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: theme.shape.borderRadius,

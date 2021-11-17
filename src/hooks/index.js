@@ -135,6 +135,7 @@ export function useCheckJoin(programDetail, uid, contractAddress) {
     useContractCall(
       uid &&
         programDetail.code &&
+        programDetail.code !== '' &&
         contractAddress && {
           abi: referralContractInterface,
           address: contractAddress,
@@ -145,9 +146,39 @@ export function useCheckJoin(programDetail, uid, contractAddress) {
 
   return joined
 }
+export function useGetTotalUser(programDetail, contractAddress) {
+  const [joined] =
+    useContractCall(
+      programDetail.code &&
+        programDetail.code !== '' &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'getTotalJoiner',
+          args: [programDetail.code],
+        }
+    ) ?? []
+
+  return joined
+}
+export function useGetTotalIncentive(programDetail, contractAddress) {
+  const [joined] =
+    useContractCall(
+      programDetail.code &&
+        programDetail.code !== '' &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'incentiveProgram',
+          args: [programDetail.code],
+        }
+    ) ?? []
+
+  return joined
+}
 
 export function useCall(functionCall, contractAddress, args = []) {
-  const [joined] =
+  const [val] =
     useContractCall(
       contractAddress && {
         abi: referralContractInterface,
@@ -157,20 +188,25 @@ export function useCall(functionCall, contractAddress, args = []) {
       }
     ) ?? []
 
-  return joined
+  return val
 }
 
-export function useGetIncentiveHolder(programDetail, contractAddress) {
+// Dùng useContractCalls
+/* export function useGetIncentiveHolder(
+  programDetail,
+  totalHolders,
+  contractAddress
+) {
   const { account } = useEthers()
 
-  var indexList = [0, 1, 3, 4]
-
-  indexList.map(index => {
-    console.log(index)
-  })
+  var indexList = Array.from(Array(totalHolders).keys())
 
   return useContractCalls(
-    account && programDetail.code && contractAddress
+    account &&
+      programDetail.code &&
+      programDetail.code !== '' &&
+      totalHolders > 0 &&
+      contractAddress
       ? indexList.map(index => ({
           abi: referralContractInterface,
           address: contractAddress,
@@ -179,6 +215,98 @@ export function useGetIncentiveHolder(programDetail, contractAddress) {
         }))
       : []
   )
+} */
+export function useGetIncentiveHolder(programDetail, contractAddress) {
+  const { account } = useEthers()
+
+  const [uidList] =
+    useContractCall(
+      account &&
+        programDetail.code &&
+        programDetail.code !== '' &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'getIncentiveHolders',
+          args: [programDetail.code],
+        }
+    ) ?? []
+
+  return uidList
+}
+export function useGetJoiner(programDetail, openUsers, contractAddress) {
+  const { account } = useEthers()
+
+  const [uidList] =
+    useContractCall(
+      account &&
+        openUsers &&
+        programDetail.code &&
+        programDetail.code !== '' &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'getJoiner',
+          args: [programDetail.code],
+        }
+    ) ?? []
+
+  return uidList
+}
+
+export function useGetAddressJoiner(programDetail, joiners, contractAddress) {
+  const { account } = useEthers()
+  return useContractCalls(
+    account &&
+      programDetail.code &&
+      programDetail.code !== '' &&
+      joiners &&
+      joiners.length > 0 &&
+      joiners[0] &&
+      contractAddress
+      ? joiners.map(joiner => ({
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'uidJoined',
+          args: [programDetail.code, joiner],
+        }))
+      : []
+  )
+}
+export function useGetIncentive(programDetail, holders, contractAddress) {
+  const { account } = useEthers()
+  return useContractCalls(
+    account &&
+      programDetail.code &&
+      programDetail.code !== '' &&
+      holders &&
+      holders.length > 0 &&
+      holders[0] &&
+      contractAddress
+      ? holders.map(holder => ({
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'incentiveHold',
+          args: [programDetail.code, holder],
+        }))
+      : []
+  )
+}
+
+export function useGetHoldersTotal(programDetail, contractAddress) {
+  const [joined] =
+    useContractCall(
+      programDetail.code &&
+        programDetail.code !== '' &&
+        contractAddress && {
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'getIncentiveHoldersCount',
+          args: [programDetail.code],
+        }
+    ) ?? []
+
+  return joined
 }
 
 /* export function useGetIncentiveHolder(programDetail, index, contractAddress) {
