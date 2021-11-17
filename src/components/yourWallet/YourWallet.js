@@ -24,17 +24,22 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material'
 
 import { styled, alpha } from '@mui/material/styles'
 
-import MenuIcon from '@mui/icons-material/Menu'
+// import MenuIcon from '@mui/icons-material/Menu'
 import SearchIcon from '@mui/icons-material/Search'
-
+import RemoveCircleRoundedIcon from '@mui/icons-material/RemoveCircleRounded'
 import { makeStyles } from '@mui/styles'
 import { useEthers } from '@usedapp/core'
 import { formatUnits } from '@ethersproject/units'
-import md5 from 'md5'
+// import md5 from 'md5'
 
 import { WalletBalance } from './WalletBalance'
 import { ContractBalance } from './ContractBalance'
@@ -43,8 +48,6 @@ import config from '../../network-config'
 import {
   useContractMethod,
   useGetProgram,
-  useEnableValidUser,
-  useDisableValidUser,
   useCheckJoin,
   useJoined,
   useCall,
@@ -158,6 +161,23 @@ export const YourWallet = ({ supportedTokens }) => {
     joinProgram(programCode, myUid, referral ?? '')
   }
 
+  const [openConfirm, setOpenConfirm] = React.useState(false)
+  const [userUid, setUserUid] = React.useState(false)
+
+  const handleClickOpenConfirm = uid => () => {
+    setUserUid(uid)
+    setOpenConfirm(true)
+  }
+
+  const handleConfirm = () => {
+    // setOpenConfirm(false)
+    // TODO:
+  }
+  const handleCloseConfirm = () => {
+    setOpenConfirm(false)
+    setUserUid('')
+  }
+
   const [rows, setRows] = useState([])
 
   useEffect(() => {
@@ -210,7 +230,12 @@ export const YourWallet = ({ supportedTokens }) => {
       <Divider style={{ marginTop: 16, marginBottom: 16 }} />
       <Box className={classes.box}>
         <h3>Your Balance</h3>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+          }}>
           {supportedTokens.map((token, index) => {
             return (
               <Box
@@ -225,7 +250,12 @@ export const YourWallet = ({ supportedTokens }) => {
           })}
         </Box>
         <h3>Referral Contract Balance</h3>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+          }}>
           {supportedTokens.map((token, index) => {
             return (
               <Box
@@ -305,35 +335,46 @@ export const YourWallet = ({ supportedTokens }) => {
                 />
               </ListItem>
             </List>
-
-            <TableContainer component={Paper}>
-              <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>UID</TableCell>
-                    <TableCell align="right">Own</TableCell>
-                    <TableCell align="right">Incentive</TableCell>
-                    <TableCell align="right">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map(row => (
-                    <TableRow
-                      key={row.uid}
-                      sx={{
-                        '&:last-child td, &:last-child th': { border: 0 },
-                      }}>
-                      <TableCell component="th" scope="row">
-                        {row.uid}
-                      </TableCell>
-                      <TableCell align="right">{row.tokenOwn}</TableCell>
-                      <TableCell align="right">{row.tokenIncentive}</TableCell>
-                      <TableCell align="right">BTN</TableCell>
+            <div sx={{ overflow: 'hidden' }}>
+              <TableContainer sx={{ maxHeight: 450 }} component={Paper}>
+                <Table stickyHeader aria-label="simple table" size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>UID</TableCell>
+                      <TableCell align="right">Own</TableCell>
+                      <TableCell align="right">Incentive</TableCell>
+                      <TableCell align="right">Action</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map(row => (
+                      <TableRow
+                        key={row.uid}
+                        sx={{
+                          '&:last-child td, &:last-child th': { border: 0 },
+                        }}>
+                        <TableCell component="th" scope="row">
+                          {row.uid}
+                        </TableCell>
+                        <TableCell align="right">{row.tokenOwn}</TableCell>
+                        <TableCell align="right">
+                          {row.tokenIncentive}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            color="primary"
+                            aria-label="upload picture"
+                            component="span"
+                            onClick={handleClickOpenConfirm(row.uid)}>
+                            <RemoveCircleRoundedIcon style={{ color: 'red' }} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </div>
           </CardContent>
           <CardActions className={classes.rightAlignItem}>
             <Button
@@ -359,6 +400,27 @@ export const YourWallet = ({ supportedTokens }) => {
           </CardActions>
         </Card>
       )}
+
+      <Dialog
+        open={openConfirm}
+        onClose={handleCloseConfirm}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description">
+        <DialogTitle id="alert-dialog-title">
+          Denied the incentive of user #{userUid}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            This action will clean all incentive of user as you see on screen.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirm}>Disagree</Button>
+          <Button onClick={handleConfirm} autoFocus>
+            Agree
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
