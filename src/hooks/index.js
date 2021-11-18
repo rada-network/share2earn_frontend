@@ -161,7 +161,7 @@ export function useGetTotalUser(programDetail, contractAddress) {
 
   return joined
 }
-export function useGetTotalIncentive(programDetail, contractAddress) {
+/* export function useGetTotalIncentive(programDetail, contractAddress) {
   const [joined] =
     useContractCall(
       programDetail.code &&
@@ -175,7 +175,7 @@ export function useGetTotalIncentive(programDetail, contractAddress) {
     ) ?? []
 
   return joined
-}
+} */
 
 export function useCall(functionCall, contractAddress, args = []) {
   const [val] =
@@ -273,6 +273,26 @@ export function useGetAddressJoiner(programDetail, joiners, contractAddress) {
       : []
   )
 }
+export function useGetJoinerReferees(programDetail, joiners, contractAddress) {
+  const { account } = useEthers()
+  return useContractCalls(
+    account &&
+      programDetail.code &&
+      programDetail.code !== '' &&
+      joiners &&
+      joiners.length > 0 &&
+      joiners[0] &&
+      contractAddress
+      ? joiners.map(joiner => ({
+          abi: referralContractInterface,
+          address: contractAddress,
+          method: 'getJoinerReferees',
+          args: [programDetail.code, joiner],
+        }))
+      : []
+  )
+}
+
 export function useGetIncentive(programDetail, holders, contractAddress) {
   const { account } = useEthers()
   return useContractCalls(

@@ -109,7 +109,7 @@ export const Header = () => {
             sx={{ flexGrow: 1, display: { xs: 'noneX', sm: 'block' } }}>
             Referral | Rada.network
           </Typography>
-          <Typography
+          {/* <Typography
             variant="span"
             noWrap
             component="div"
@@ -122,7 +122,7 @@ export const Header = () => {
                 variant="warning"
               />
             )}
-          </Typography>
+          </Typography> */}
           {/* <Link to="/home" style={{ textDecoration: 'none' }}>
             <Button variant="text" style={{ color: 'white' }}>
               Homepage

@@ -56,9 +56,10 @@ import {
   useGetIncentiveHolder,
   useGetIncentive,
   useGetTotalUser,
-  useGetTotalIncentive,
+  // useGetTotalIncentive,
   useGetJoiner,
   useGetAddressJoiner,
+  useGetJoinerReferees,
   // useGetHoldersTotal,
 } from '../../hooks'
 
@@ -207,7 +208,12 @@ export const YourWallet = ({ supportedTokens }) => {
     joiner,
     contractAddress
   )
-  // console.log(addressJoiners)
+  const refereesJoiners = useGetJoinerReferees(
+    programDetail,
+    joiner,
+    contractAddress
+  )
+  console.log(refereesJoiners)
 
   // console.log(incentiveHolders, 'incentiveHolders')
   const incentiveAmount = useGetIncentive(
@@ -217,7 +223,11 @@ export const YourWallet = ({ supportedTokens }) => {
   )
 
   const totalJoiner = useGetTotalUser(programDetail, contractAddress)
-  const totalIncentive = useGetTotalIncentive(programDetail, contractAddress)
+  // const totalIncentive = useGetTotalIncentive(programDetail, contractAddress)
+  const totalIncentive =
+    programDetail && programDetail.code && programDetail.code !== ''
+      ? programDetail.tokenIncentive
+      : 0
 
   // console.log(incentiveAmount, 'incentiveHolders')
 
@@ -258,6 +268,12 @@ export const YourWallet = ({ supportedTokens }) => {
   const handleClickOpenListUser = () => {
     setOpenUsers(true)
   }
+  const handleClickCloseRemove = () => {
+    setOpenRemove(false)
+  }
+  const handleClickOpenRemove = () => {
+    setOpenUsers(true)
+  }
 
   const [rows, setRows] = useState([])
 
@@ -293,7 +309,17 @@ export const YourWallet = ({ supportedTokens }) => {
     <Box className={classes.boxMain}>
       {account && (
         <Box className={classes.box}>
-          <div> Your Wallet is {account}</div>
+          <div>
+            {' '}
+            Your Wallet is {account}{' '}
+            {isAdmin === true && (
+              <Chip
+                style={{ color: 'red' }}
+                label={'Admin'}
+                variant="warning"
+              />
+            )}
+          </div>
           {/* {isAdmin && (
             <div className={classes.uid}>
               Your UID (fake): <b>{myUid}</b>
@@ -492,6 +518,9 @@ export const YourWallet = ({ supportedTokens }) => {
             </div>
           </CardContent>
           <CardActions className={classes.rightAlignItem}>
+            <Button variant="contained" onClick={handleClickOpenRemove}>
+              Remove
+            </Button>
             <Button variant="contained" onClick={handleClickOpenListUser}>
               Joiners
             </Button>
